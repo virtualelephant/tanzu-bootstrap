@@ -1,0 +1,26 @@
+---
+- hosts: ansible-test
+  become: yes
+  gather_facts: false
+  vars_files:
+    - globals.yaml
+
+  tasks:
+    - name: Download Tanzu bundle from S3
+      s3:
+        aws_access_key: "{{ AWS_ACCESS_KEY_ID }}"
+        aws_secret_key: "{{ AWS_SECRET_ACCESS_KEY }}"
+        bucket: "tanzu-downloads"
+        object: "tanzu-cli-bundle-linux-amd64.tar.gz"
+        dest: "/tmp/tanzu-cli-bundle-linux-amd64.tar.gz"
+        mode: get
+
+    - name: Download Tanzu kubectl from S3"
+      s3:
+        aws_access_key: "{{ AWS_ACCESS_KEY_ID }}"
+        aws_secret_key: "{{ AWS_SECRET_ACCESS_KEY }}"
+        bucket: "tanzu-downloads"
+        object: "kubectl-linux-v1.23.8+vmware.2.gz"
+        dest: "/tmp/kubectl-linux-v1.23.8+vmware.2.gz"
+        mode: get
+

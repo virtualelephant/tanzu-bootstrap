@@ -1,0 +1,35 @@
+---
+- hosts: ansible-test
+  become: yes
+  gather_facts: false
+  vars_files: 
+    - globals.yaml
+
+  tasks:
+  # Docker installation bits
+  - name: Get Docker GPG key
+    shell: "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg"
+  - name: Add Docker repo
+    lineinfile:
+      dest: /etc/apt/sources.list.d/docker.list
+      line: "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu jammy stable"
+      create: yes
+  - name: Update repo list for Docker
+    apt:
+      update_cache: yes
+      force_apt_get: yes
+  - name: Install Docker
+    apt:
+      name: ['docker-ce', 'docker-ce-cli', 'docker-compose-plugin', 'docker-scan-plugin', 'docker-ce-rootless-extras']
+      force_apt_get: yes
+      state: present
+  - name: Add user to Docker group
+    user:
+      name: deploy
+      groups: docker
+      append: yes
+  - name: Enable and start Docker service
+    systemd:
+      name: docker
+      enabled: yes
+      state: restarted
