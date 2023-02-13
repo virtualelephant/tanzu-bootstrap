@@ -65,4 +65,4 @@
         - install /tmp/cli/kbld-linux-amd64-v0.34.0+vmware.1 /usr/local/bin/kbld
         - gzip -d /tmp/cli/ytt-linux-amd64-v0.41.1+vmware.1.gz
         - chmod ugo+x /tmp/cli/ytt-linux-amd64-v0.41.1+vmware.1
-        - install /tmp/cli/ytt-linux-amd64-v0.41.1.+vmware.1 /usr/local/bin/ytt
+        - install /tmp/cli/ytt-linux-amd64-v0.41.1+vmware.1 /usr/local/bin/ytt

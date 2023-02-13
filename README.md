@@ -1,4 +1,6 @@
 # tanzu-bootstrap
+Released on Monday February 13th, 2023
+
 Ansible playbooks for creating a Tanzu Bootstrap server. These are designed to be run locally
 on a Ubuntu Linux VM/machine.
 
