@@ -1,5 +1,5 @@
 ---
-- hosts: ansible-test
+- hosts: localhost
   become: yes
   gather_facts: false
   vars_files:
@@ -7,20 +7,62 @@
 
   tasks:
     - name: Download Tanzu bundle from S3
-      s3:
-        aws_access_key: "{{ AWS_ACCESS_KEY_ID }}"
-        aws_secret_key: "{{ AWS_SECRET_ACCESS_KEY }}"
+      aws_s3:
+        aws_access_key: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
+        aws_secret_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
         bucket: "tanzu-downloads"
         object: "tanzu-cli-bundle-linux-amd64.tar.gz"
         dest: "/tmp/tanzu-cli-bundle-linux-amd64.tar.gz"
         mode: get
 
     - name: Download Tanzu kubectl from S3"
-      s3:
-        aws_access_key: "{{ AWS_ACCESS_KEY_ID }}"
-        aws_secret_key: "{{ AWS_SECRET_ACCESS_KEY }}"
+      aws_s3:
+        aws_access_key: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
+        aws_secret_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
         bucket: "tanzu-downloads"
         object: "kubectl-linux-v1.23.8+vmware.2.gz"
         dest: "/tmp/kubectl-linux-v1.23.8+vmware.2.gz"
         mode: get
 
+    - name: Unpack kubectl command from gzip file
+      command: gzip -d /tmp/kubectl-linux-v1.23.8+vmware.2.gz
+      register: gzip_kubectl
+
+    - name: Install kubectl command on host
+      command: install /tmp/kubectl-linux-v1.23.8+vmware.2 /usr/local/bin/kubectl
+      register: kubectl_install
+
+    - name: Unzip Tanzu bundle
+      command: gzip -d /tmp/tanzu-cli-bundle-linux-amd64.tar.gz
+      register: gzip_tanzu
+
+    - name: Unpack Tanzu bundle from .tar file
+      command: tar xvf /tmp/tanzu-cli-bundle-linux-amd64.tar -C /tmp/
+
+    - name: Install Tanzu CLI
+      command: install /tmp/cli/core/{{ version }}/tanzu-core-linux_amd64 /usr/local/bin/tanzu
+      register: tanzu_install
+
+    - name: Sync Tanzu Plugins
+      command: tanzu plugin sync
+      register: tanzu_plugin_sync
+
+    - name: Initialize Tanzu
+      command: tanzu init
+      register: tanzu_init
+
+    - name: Install supporting packages from Tanzu tarball
+      command: "{{ item }}"
+      with_items:
+        - gzip -d /tmp/cli/imgpkg-linux-amd64-v0.29.0+vmware.1.gz
+        - chmod ugo+x /tmp/cli/imgpkg-linux-amd64-v0.29.0+vmware.1
+        - install /tmp/cli/imgpkg-linux-amd64-v0.29.0+vmware.1 /usr/local/bin/imgpkg
+        - gzip -d /tmp/cli/kapp-linux-amd64-v0.49.0+vmware.1.gz
+        - chmod ugo+x /tmp/cli/kapp-linux-amd64-v0.49.0+vmware.1
+        - install /tmp/cli/kapp-linux-amd64-v0.49.0+vmware.1 /usr/local/bin/kapp
+        - gzip -d /tmp/cli/kbld-linux-amd64-v0.34.0+vmware.1.gz
+        - chmod ugo+x /tmp/cli/kbld-linux-amd64-v0.34.0+vmware.1
+        - install /tmp/cli/kbld-linux-amd64-v0.34.0+vmware.1 /usr/local/bin/kbld
+        - gzip -d /tmp/cli/ytt-linux-amd64-v0.41.1+vmware.1.gz
+        - chmod ugo+x /tmp/cli/ytt-linux-amd64-v0.41.1+vmware.1
+        - install /tmp/cli/ytt-linux-amd64-v0.41.1.+vmware.1 /usr/local/bin/ytt

@@ -1,5 +1,5 @@
 ---
-- hosts: ansible-test
+- hosts: localhost
   become: yes
   gather_facts: false
   vars_files: 
@@ -7,6 +7,11 @@
 
   tasks:
   # Docker installation bits
+  - name: Install system packages
+    apt:
+      name: ['pip', 'unzip', 'net-tools']
+      force_apt_get: yes
+      state: present
   - name: Get Docker GPG key
     shell: "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg"
   - name: Add Docker repo
