@@ -21,14 +21,11 @@
       - pip3 install boto boto3
       - pip3 install ansible[aws]
 
-  - name: Get Docker GPG key
+  - name: Install Docker GPG key
     shell: "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg"
 
-  - name: Add Docker repo
-    lineinfile:
-      dest: /etc/apt/sources.list.d/docker.list
-      line: "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu jammy stable"
-      create: yes
+  - name: Add sources.list.d file for Docker
+    shell: "echo \"deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable\" | tee /etc/apt/sources.list.d/docker.list > /dev/null"
 
   - name: Update repo list for Docker
     apt:
