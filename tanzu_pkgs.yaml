@@ -6,35 +6,37 @@
     - globals.yaml
 
   tasks:
-    - name: Download Tanzu bundle from S3
-      aws_s3:
-        aws_access_key: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
-        aws_secret_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
-        bucket: "tanzu-downloads"
-        object: "tanzu-cli-bundle-linux-amd64.tar.gz"
-        dest: "/tmp/tanzu-cli-bundle-linux-amd64.tar.gz"
-        mode: get
+    - name: Download 3rd-party pre-requisite packages
+      shell: |
+        curl -s -L github.com/carvel-dev/ytt/releases/download/v0.45.0/ytt-linux-amd64 > /tmp/ytt
+        mv /tmp/ytt /usr/local/bin/ytt
+        chmod +x /usr/local/bin/ytt
+        curl -s -L github.com/carvel-dev/ytt/releases/download/v0.45.0/imgpkg-linux-amd64 > /tmp/imgpkg
+        mv /tmp/imgpkg /usr/local/bin/imgpkg
+        chmod +x /usr/local/bin/imgpkg
+        curl -s -L github.com/carvel-dev/ytt/releases/download/v0.45.0/kbld-linux-amd64 > /tmp/kbld
+        mv /tmp/kbld /usr/local/bin/kbld
+        chmod +x /usr/local/bin/kbld
+        curl -s -L github.com/carvel-dev/ytt/releases/download/v0.45.0/kapp-linux-amd64 > /tmp/kapp
+        mv /tmp/kapp /usr/local/bin/kapp
+        chmod +x /usr/local/bin/kapp
+    
+    - name: Install Kubernetes GPG key
+      shell: "curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmour -o /etc/apt/trusted.gpg.d/kubernetes-xenial.gpg"
+      
+    - name: Create sources.list.d file for Kubernetes
+      shell: "apt-add-repository \"deb http://apt.kubernetes.io/ kubernetes-xenial main\""
+    
+    - name: Update package cache in Ubuntu
+      apt:
+      update_cache: yes
+      force_apt_get: yes
 
-    - name: Download Tanzu kubectl from S3"
-      aws_s3:
-        aws_access_key: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
-        aws_secret_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
-        bucket: "tanzu-downloads"
-        object: "kubectl-linux-v1.23.8+vmware.2.gz"
-        dest: "/tmp/kubectl-linux-v1.23.8+vmware.2.gz"
-        mode: get
-
-    - name: Unpack kubectl command from gzip file
-      command: gzip -d /tmp/kubectl-linux-v1.23.8+vmware.2.gz
-      register: gzip_kubectl
-
-    - name: Install kubectl command on host
-      command: install /tmp/kubectl-linux-v1.23.8+vmware.2 /usr/local/bin/kubectl
-      register: kubectl_install
-
-    - name: Unzip Tanzu bundle
-      command: gzip -d /tmp/tanzu-cli-bundle-linux-amd64.tar.gz
-      register: gzip_tanzu
+    - name: Install Kubernetes packages
+      apt:
+        name: ['kubectl']
+        force_apt_get: yes
+        state: present
 
     - name: Unpack Tanzu bundle from .tar file
       command: tar xvf /tmp/tanzu-cli-bundle-linux-amd64.tar -C /tmp/
@@ -50,19 +52,3 @@
     - name: Initialize Tanzu
       command: tanzu init
       register: tanzu_init
-
-    - name: Install supporting packages from Tanzu tarball
-      command: "{{ item }}"
-      with_items:
-        - gzip -d /tmp/cli/imgpkg-linux-amd64-v0.29.0+vmware.1.gz
-        - chmod ugo+x /tmp/cli/imgpkg-linux-amd64-v0.29.0+vmware.1
-        - install /tmp/cli/imgpkg-linux-amd64-v0.29.0+vmware.1 /usr/local/bin/imgpkg
-        - gzip -d /tmp/cli/kapp-linux-amd64-v0.49.0+vmware.1.gz
-        - chmod ugo+x /tmp/cli/kapp-linux-amd64-v0.49.0+vmware.1
-        - install /tmp/cli/kapp-linux-amd64-v0.49.0+vmware.1 /usr/local/bin/kapp
-        - gzip -d /tmp/cli/kbld-linux-amd64-v0.34.0+vmware.1.gz
-        - chmod ugo+x /tmp/cli/kbld-linux-amd64-v0.34.0+vmware.1
-        - install /tmp/cli/kbld-linux-amd64-v0.34.0+vmware.1 /usr/local/bin/kbld
-        - gzip -d /tmp/cli/ytt-linux-amd64-v0.41.1+vmware.1.gz
-        - chmod ugo+x /tmp/cli/ytt-linux-amd64-v0.41.1+vmware.1
-        - install /tmp/cli/ytt-linux-amd64-v0.41.1+vmware.1 /usr/local/bin/ytt
